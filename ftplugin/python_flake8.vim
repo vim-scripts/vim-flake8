@@ -1,7 +1,7 @@
 "
 " Python filetype plugin for running flake8
 " Language:     Python (ft=python)
-" Maintainer:   Vincent Driessen <vincent@datafox.nl>
+" Maintainer:   Vincent Driessen <vincent@3rdcloud.com>
 " Version:      Vim 7 (may work with lower Vim versions, but not tested)
 " URL:          http://github.com/nvie/vim-flake8
 "
@@ -11,15 +11,14 @@ if exists("b:loaded_flake8_ftplugin")
 endif
 let b:loaded_flake8_ftplugin=1
 
-let s:flake8_cmd="flake8"
-
-let s:flake8_ignores=""
-if exists("g:flake8_ignore")
-    let s:flake8_ignores=" --ignore=".g:flake8_ignore
-endif
-
 if !exists("*Flake8()")
     function Flake8()
+        if exists("g:flake8_cmd")
+            let s:flake8_cmd=g:flake8_cmd
+        else
+            let s:flake8_cmd="flake8"
+        endif
+
         if !executable(s:flake8_cmd)
             echoerr "File " . s:flake8_cmd . " not found. Please install it first."
             return
@@ -37,9 +36,28 @@ if !exists("*Flake8()")
             update
         endif
 
+        " read config
+        if exists("g:flake8_ignore")
+            let s:flake8_ignores=" --ignore=".g:flake8_ignore
+        else
+            let s:flake8_ignores=""
+        endif
+
+        if exists("g:flake8_max_line_length")
+            let s:flake8_max_line_length=" --max-line-length=".g:flake8_max_line_length
+        else
+            let s:flake8_max_line_length=""
+        endif
+
+        if exists("g:flake8_max_complexity")
+            let s:flake8_max_complexity=" --max-complexity=".g:flake8_max_complexity
+        else
+            let s:flake8_max_complexity=""
+        endif
+
         " perform the grep itself
         let &grepformat="%f:%l:%c: %m\,%f:%l: %m"
-        let &grepprg=s:flake8_cmd.s:flake8_ignores
+        let &grepprg=s:flake8_cmd.s:flake8_ignores.s:flake8_max_line_length.s:flake8_max_complexity
         silent! grep! %
 
         " restore grep settings
@@ -74,6 +92,5 @@ endif
 if !exists("no_plugin_maps") && !exists("no_flake8_maps")
     if !hasmapto('Flake8(')
         noremap <buffer> <F7> :call Flake8()<CR>
-        noremap! <buffer> <F7> :call Flake8()<CR>
     endif
 endif
